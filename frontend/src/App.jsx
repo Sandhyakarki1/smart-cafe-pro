@@ -16,6 +16,7 @@ import Menumanagement from "./pages/Menumanagement.jsx";
 import Billing from "./pages/Billing.jsx";
 import Orders from "./pages/Orders.jsx";
 import QRCode from "./pages/QRCode.jsx";
+import TableSettings from "./pages/TableSettings.jsx";
 
 // Staff
 import KitchenDashboard from "./pages/KitchenDashboard";
@@ -53,6 +54,7 @@ function App() {
           <Route path="feedback" element={<FeedbackManagement />} />
           <Route path="billing" element={<Billing />} />
           <Route path="qrcode" element={<QRCode />} />
+          <Route path="tables" element={<TableSettings />} />
         </Route>
 
         {/* ================= STAFF ================= */}

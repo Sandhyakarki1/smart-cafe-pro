@@ -3,8 +3,7 @@ import {
   Clock, CheckCircle, Plus, Minus, X, ShoppingCart, 
   Utensils, Banknote, ChefHat, Play, Check, CreditCard
 } from 'lucide-react';
-
-const BASE_URL = "https://prisoners-mood-hearing-moved.trycloudflare.com";
+import { BASE_URL } from '../config';
 
 const Orders = () => {
   const [orders, setOrders] = useState([]);

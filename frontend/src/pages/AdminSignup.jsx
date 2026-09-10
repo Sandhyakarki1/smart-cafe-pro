@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { BASE_URL } from '../config';
 
 const AdminSignup = () => {
   const [step, setStep] = useState(1); 
@@ -13,9 +14,6 @@ const AdminSignup = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-
-  const BASE_URL = "http://localhost:8000";
-
 
   const requestOTP = async (e) => {
     e.preventDefault();

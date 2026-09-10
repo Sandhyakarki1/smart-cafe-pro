@@ -1,3 +1,10 @@
 venv/
-.vercel
+.env
+.env.local
 .env*.local
+node_modules/
+staticfiles/
+media/
+__pycache__/
+*.pyc
+smart_cafe.db

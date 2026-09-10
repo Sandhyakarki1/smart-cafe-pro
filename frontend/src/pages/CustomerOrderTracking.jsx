@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Clock, ChefHat, Bell, Star, CheckCircle, MessageSquare } from "lucide-react";
-
-const BASE_URL = "https://prisoners-mood-hearing-moved.trycloudflare.com";
+import { BASE_URL } from "../config";
 
 export default function CustomerOrderTracking() {
   const { id } = useParams();
+
+
   const navigate = useNavigate();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);

@@ -16,13 +16,16 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework import status
 from rest_framework.permissions import AllowAny
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.permissions import IsAuthenticated
 
-from .models import Profile, Order, OrderItem, MenuItem, Feedback
+from .models import Profile, Order, OrderItem, MenuItem, Feedback, Table, Cafe
 from .serializers import (
     UserSerializer,
     MenuItemSerializer,
     OrderSerializer,
-    FeedbackSerializer
+    FeedbackSerializer,
+    TableSerializer
 )
 
 # ==================================================
@@ -52,7 +55,14 @@ class AdminLoginView(APIView):
         user_obj = get_object_or_404(User, email=email)
         user = authenticate(username=user_obj.username, password=password)
         if user and user.profile.role == "Admin":
-            return Response({"message": "Login successful", "username": user.username})
+            refresh = RefreshToken.for_user(user)
+            return Response({
+                "message": "Login successful",
+                "username": user.username,
+                "cafe_id": user.profile.cafe_id,
+                "access": str(refresh.access_token),
+                "refresh": str(refresh)
+            })
         return Response({"error": "Invalid credentials"}, status=401)
 
 class StaffLoginView(APIView):
@@ -62,7 +72,15 @@ class StaffLoginView(APIView):
         user_obj = get_object_or_404(User, email=email)
         user = authenticate(username=user_obj.username, password=password)
         if user and user.profile.role == role:
-            return Response({"message": "Login successful", "username": user.username, "role": user.profile.role})
+            refresh = RefreshToken.for_user(user)
+            return Response({
+                "message": "Login successful",
+                "username": user.username,
+                "role": user.profile.role,
+                "cafe_id": user.profile.cafe_id,
+                "access": str(refresh.access_token),
+                "refresh": str(refresh)
+            })
         return Response({"error": "Invalid credentials"}, status=401)
 
 @api_view(['POST'])
@@ -157,15 +175,18 @@ def verify_signup_otp(request):
 # 3. STAFF MANAGEMENT
 # ==================================================
 class StaffManagementView(APIView):
+    permission_classes = [IsAuthenticated]
     def get(self, request):
-        staff = User.objects.filter(is_superuser=False)
+        cafe = request.user.profile.cafe
+        staff = User.objects.filter(is_superuser=False, profile__cafe=cafe)
         return Response(UserSerializer(staff, many=True).data)
 
-    #  This makes the "Add Staff" button work
     def post(self, request):
         serializer = UserSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            user = serializer.save()
+            user.profile.cafe = request.user.profile.cafe
+            user.profile.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -193,24 +214,37 @@ class StaffDetailView(APIView):
 # 4. MENU MANAGEMENT
 # ==================================================
 class MenuManagementView(APIView):
+    permission_classes = [AllowAny]
+
+    def get_permissions(self):
+        if self.request.method == 'POST':
+            return [IsAuthenticated()]
+        return [AllowAny()]
+
     def get(self, request):
-        items = MenuItem.objects.all()
+        if request.user and request.user.is_authenticated:
+            items = MenuItem.objects.filter(cafe=request.user.profile.cafe)
+        else:
+            # Public customer view — single-cafe setup for now
+            items = MenuItem.objects.filter(cafe=Cafe.objects.first())
         return Response(MenuItemSerializer(items, many=True).data)
 
     def post(self, request):
-        serializer = MenuItemSerializer(data=request.data)
+        data = request.data.copy()
+        serializer = MenuItemSerializer(data=data)
         if serializer.is_valid():
-            serializer.save()
+            serializer.save(cafe=request.user.profile.cafe)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class MenuItemDetailView(APIView):
+    permission_classes = [IsAuthenticated]
     def get(self, request, pk):
-        item = get_object_or_404(MenuItem, pk=pk)
+        item = get_object_or_404(MenuItem, pk=pk, cafe=request.user.profile.cafe)
         return Response(MenuItemSerializer(item).data)
     
     def put(self, request, pk):
-        item = get_object_or_404(MenuItem, pk=pk)
+        item = get_object_or_404(MenuItem, pk=pk, cafe=request.user.profile.cafe)
         serializer = MenuItemSerializer(item, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
@@ -218,9 +252,45 @@ class MenuItemDetailView(APIView):
         return Response(serializer.errors, status=400)
     
     def delete(self, request, pk):
-        get_object_or_404(MenuItem, pk=pk).delete()
+        get_object_or_404(MenuItem, pk=pk, cafe=request.user.profile.cafe).delete()
         return Response({"message": "Deleted"})
+
 # ==================================================
+# TABLE MANAGEMENT
+# ==================================================
+class TableListView(APIView):
+    def get_permissions(self):
+        if self.request.method == 'POST':
+            return [IsAuthenticated()]
+        return [AllowAny()]
+
+    def get(self, request):
+        if request.user and request.user.is_authenticated:
+            cafe = request.user.profile.cafe
+        else:
+            # Public customer view — single-cafe setup for now
+            cafe = Cafe.objects.first()
+        tables = Table.objects.filter(cafe=cafe).order_by('number')
+        return Response(TableSerializer(tables, many=True).data)
+
+    def post(self, request):
+        cafe = request.user.profile.cafe
+        number = request.data.get("number")
+        if not number:
+            return Response({"error": "Table number is required"}, status=400)
+        if Table.objects.filter(cafe=cafe, number=number).exists():
+            return Response({"error": f"Table {number} already exists"}, status=400)
+        table = Table.objects.create(cafe=cafe, number=number)
+        return Response(TableSerializer(table).data, status=201)
+
+class TableDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+    def delete(self, request, pk):
+        table = get_object_or_404(Table, pk=pk, cafe=request.user.profile.cafe)
+        table.delete()
+        return Response({"message": "Table deleted"})
+
+#==================================================
 # 5. ORDER & TABLE LOGIC
 # ==================================================
 class OrderListView(APIView):
@@ -234,9 +304,13 @@ class OrderDetailView(APIView):
     def get(self, request, pk):
         order = get_object_or_404(Order, pk=pk)
         return Response(OrderSerializer(order).data)
+
     def patch(self, request, pk):
         order = get_object_or_404(Order, pk=pk)
-        order.status = request.data.get("status", order.status)
+        new_status = request.data.get("status", order.status)
+        if new_status == "Served" and order.status != "Served":
+            order.served_at = timezone.now()
+        order.status = new_status
         order.payment_method = request.data.get("payment_method", order.payment_method)
         order.save()
         return Response({"message": "Updated"})
@@ -246,10 +320,27 @@ class PlaceOrderView(APIView):
     def post(self, request):
         data = request.data
         with transaction.atomic():
+            table_id = data.get("table_id")
+            table_obj = None
+            table_num = data.get("table_number")
+
+            if table_id:
+                table_obj = get_object_or_404(Table, id=table_id)
+                table_num = table_obj.number
+                table_obj.is_occupied = True
+                table_obj.save()
+
+            # QR/customer orders (with a table_id) start unconfirmed —
+            # invisible to the kitchen until a waiter verifies the table is occupied.
+            # Manual admin orders (no table_id) go straight to Pending.
+            initial_status = "Awaiting Confirmation" if table_id else "Pending"
+
             order = Order.objects.create(
-                table_number=data["table_number"],
+                cafe=table_obj.cafe if table_obj else Cafe.objects.first(),
+                table=table_obj,
+                table_number=table_num,
                 payment_method=data.get("payment_method", "Cash"),
-                status="Pending"
+                status=initial_status
             )
             total = 0
             for item in data["items"]:
@@ -263,11 +354,22 @@ class PlaceOrderView(APIView):
             order.save()
         return Response({"message": "Order placed", "order_id": order.id})
 
+
+class ConfirmOrderView(APIView):
+    permission_classes = [IsAuthenticated]
+    def patch(self, request, pk):
+        order = get_object_or_404(Order, pk=pk)
+        if order.status == "Awaiting Confirmation":
+            order.status = "Pending"
+            order.save()
+            return Response({"message": "Order confirmed", "status": order.status})
+        return Response({"error": "Order is not awaiting confirmation"}, status=400)
+
 class CheckTableStatusView(APIView):
     permission_classes = [AllowAny]
     def get(self, request, table_id):
-        occupied = Order.objects.filter(table_number=table_id).exclude(status="Paid").exists()
-        return Response({"occupied": occupied})
+        table = get_object_or_404(Table, id=table_id)
+        return Response({"occupied": table.is_occupied})
 
 # ==================================================
 # 6. PAYMENT & BILLING

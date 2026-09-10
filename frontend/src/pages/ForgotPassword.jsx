@@ -1,6 +1,5 @@
-import { useState } from "react";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { BASE_URL } from "../config";
 
 function ForgotPassword() {
   const [email, setEmail] = useState("");
@@ -8,8 +7,6 @@ function ForgotPassword() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
-
-  const API_BASE_URL = "https://prisoners-mood-hearing-moved.trycloudflare.com"; 
 
   const handleSendOTP = async () => {
     setMessage("");
@@ -23,7 +20,7 @@ function ForgotPassword() {
     setLoading(true); 
 
     try {
-      const res = await axios.post(`${API_BASE_URL}/api/admin/forgot-password/`, { email });
+      const res = await axios.post(`${BASE_URL}/api/admin/forgot-password/`, { email });
       
       setMessage(res.data.message);
       

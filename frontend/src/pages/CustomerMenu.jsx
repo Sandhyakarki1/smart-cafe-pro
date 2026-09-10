@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom"; 
 import { Search, ShoppingBag, Plus, Minus, Utensils, Pizza, Coffee, Loader2 } from "lucide-react";
-
-const BASE_URL = "https://prisoners-mood-hearing-moved.trycloudflare.com";
+import { BASE_URL } from "../config";
 
 export default function CustomerMenu() {
   const [menu, setMenu] = useState([]);
@@ -11,8 +10,8 @@ export default function CustomerMenu() {
   const [activeCategory, setActiveCategory] = useState("All");
   const [loading, setLoading] = useState(true); 
   const [showSplash, setShowSplash] = useState(true); 
+  const [tableNumber, setTableNumber] = useState("1");
   const { tableId } = useParams(); 
-  const table = tableId || "1"; 
   const navigate = useNavigate();
 
   const categories = [{ name: "All", icon: <Utensils size={18}/> }, { name: "Meals", icon: <Utensils size={18}/> }, { name: "Snacks", icon: <Pizza size={18}/> }, { name: "Drinks", icon: <Coffee size={18}/> }];
@@ -26,10 +25,28 @@ export default function CustomerMenu() {
   useEffect(() => {
     // Splash Timer: 2 seconds
     const timer = setTimeout(() => setShowSplash(false), 2000);
-    
-    localStorage.setItem("table", table);
+
+    // tableId from the URL is the real Table database ID (from the QR code).
+    // Store it so CustomerCart can send it back when placing the order.
+    if (tableId) {
+      localStorage.setItem("table_id", tableId);
+    }
+    const storedTableId = tableId || localStorage.getItem("table_id");
+
     setLoading(true);
-    
+
+    // Fetch the real table list to find this table's display number
+    fetch(`${BASE_URL}/api/tables/`)
+      .then(res => res.json())
+      .then(tables => {
+        const match = tables.find(t => String(t.id) === String(storedTableId));
+        if (match) {
+          setTableNumber(match.number);
+          localStorage.setItem("table", match.number);
+        }
+      })
+      .catch(() => {});
+
     fetch(`${BASE_URL}/api/menu/`)
       .then(res => res.json())
       .then(data => { setMenu(data); setLoading(false); })
@@ -37,7 +54,7 @@ export default function CustomerMenu() {
       
     setCart(JSON.parse(localStorage.getItem("cart")) || []);
     return () => clearTimeout(timer);
-  }, [table]);
+  }, [tableId]);
 
   const handleAddToCart = (e, item) => {
     if (e) e.stopPropagation();
@@ -91,7 +108,7 @@ export default function CustomerMenu() {
         <div className="flex justify-between items-center mb-6">
           <div className="text-white text-left">
             <h1 className="text-3xl font-black">Smart Cafe</h1>
-            <p className="text-[10px] font-bold opacity-80 uppercase tracking-widest text-white/80">Table {table} Menu</p>
+            <p className="text-[10px] font-bold opacity-80 uppercase tracking-widest text-white/80">Table {tableNumber} Menu</p>
           </div>
           <button onClick={() => navigate('/cart')} className="bg-white p-3 rounded-2xl text-orange-500 shadow-xl relative active:scale-95 transition-all">
              <ShoppingBag size={24}/>

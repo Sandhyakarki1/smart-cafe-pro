@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Utensils, ClipboardList, Clock, AlertTriangle, ArrowRight, CreditCard, Banknote } from 'lucide-react';
+import { BASE_URL } from '../config';
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState({ total_staff: 0, total_menu: 0, total_orders: 0, pending_orders: 0 });
@@ -8,13 +9,13 @@ const AdminDashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      const statsRes = await fetch("http://127.0.0.1:8000/api/stats/");
+     const statsRes = await fetch(`${BASE_URL}/api/stats/`);
       const statsData = await statsRes.json();
       
-      const ordersRes = await fetch("http://127.0.0.1:8000/api/orders/");
+     const ordersRes = await fetch(`${BASE_URL}/api/orders/`);
       const ordersData = await ordersRes.json();
 
-      const menuRes = await fetch("http://127.0.0.1:8000/api/menu/");
+      const menuRes = await fetch(`${BASE_URL}/api/menu/`);
       const menuData = await menuRes.json();
 
       setStats({

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit, UserCheck, UserMinus, X, ShieldCheck, ShieldAlert } from 'lucide-react';
+import { BASE_URL } from '../config';
 
 const StaffManagement = () => {
   const [staffList, setStaffList] = useState([]);
@@ -7,7 +8,7 @@ const StaffManagement = () => {
   const [editingStaff, setEditingStaff] = useState(null);
   const [formData, setFormData] = useState({ name: '', email: '', password: '', role: 'Waiter' });
   
-  const API_URL = "http://127.0.0.1:8000/api/staff/";
+  const API_URL = `${BASE_URL}/api/staff/`;
 
   useEffect(() => {
     fetchStaff();

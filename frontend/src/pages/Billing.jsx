@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Printer, Search, CreditCard, Banknote, CheckCircle, Clock, Activity, History as HistoryIcon } from 'lucide-react';
-
-
-const BASE_URL = "https://prisoners-mood-hearing-moved.trycloudflare.com";
+import { BASE_URL } from '../config';
 
 const Billing = () => {
   const [orders, setOrders] = useState([]);

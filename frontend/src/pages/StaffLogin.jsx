@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Utensils, ChefHat, LogIn, ShieldAlert } from 'lucide-react';
+import { BASE_URL } from '../config';
 
 export default function StaffLogin() {
   const [email, setEmail] = useState("");
@@ -14,7 +15,7 @@ export default function StaffLogin() {
     setLoading(true);
     try {
       
-      const res = await fetch("http://127.0.0.1:8000/api/staff/login/", {
+     const res = await fetch(`${BASE_URL}/api/staff/login/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password, role }) 

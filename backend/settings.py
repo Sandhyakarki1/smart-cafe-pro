@@ -1,17 +1,27 @@
 import os
 from pathlib import Path
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Load variables from a local .env file (DB credentials, secret key, etc.)
+load_dotenv(BASE_DIR / '.env')
+
 # ==================================================
 # BASIC SETTINGS
 # ==================================================
-SECRET_KEY = 'django-insecure-l6g6c(axm1g)m3gh0og2&$^szov!)b$w+4p35ajejmeqiksm19'
-DEBUG = True
+SECRET_KEY = os.environ.get(
+    'DJANGO_SECRET_KEY',
+    'django-insecure-l6g6c(axm1g)m3gh0og2&$^szov!)b$w+4p35ajejmeqiksm19'
+)
+DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
 
-# Allows any tunnel link to connect 
-ALLOWED_HOSTS = ['*']
+# Local development only
+ALLOWED_HOSTS = os.environ.get(
+    'DJANGO_ALLOWED_HOSTS',
+    'localhost,127.0.0.1,0.0.0.0'
+).split(',')
 
 
 # ==================================================
@@ -39,6 +49,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware', 
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -72,25 +83,37 @@ TEMPLATES = [
 WSGI_APPLICATION = 'backend.wsgi.application'
 
 # ==================================================
-# DATABASE
+# DATABASE (PostgreSQL - local development)
 # ==================================================
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'smart_cafe.db', 
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get('DB_NAME', 'smart_cafe'),
+        'USER': os.environ.get('DB_USER', 'postgres'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', ''),
+        'HOST': os.environ.get('DB_HOST', 'localhost'),
+        'PORT': os.environ.get('DB_PORT', '5432'),
     }
 }
 
 # ==================================================
-# CORS & CSRF 
+# CORS & CSRF (local development only)
 # ==================================================
-CORS_ALLOW_ALL_ORIGINS = True 
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://192.168.1.65:5173",
+]
 CORS_ALLOW_CREDENTIALS = True
 
-# Allows any Cloudflare tunnel to send POST requests
 CSRF_TRUSTED_ORIGINS = [
-    "https://*.trycloudflare.com",
-    "https://smart-cafe.vercel.app",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://192.168.1.65:5173",
 ]
 
 # Standard headers 
@@ -102,7 +125,7 @@ CORS_ALLOW_HEADERS = list(default_headers)
 # ==================================================
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.AllowAny', 
+        'rest_framework.permissions.IsAuthenticated', 
     ],
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.SessionAuthentication',
@@ -115,6 +138,7 @@ REST_FRAMEWORK = {
 # ==================================================
 STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
@@ -136,6 +160,6 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'sandhyakarki506@gmail.com'
-EMAIL_HOST_PASSWORD = 'vnblgdnhgutswnhi'  
-DEFAULT_FROM_EMAIL = 'SmartCafe <sandhyakarki506@gmail.com>'
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+DEFAULT_FROM_EMAIL = f'SmartCafe <{EMAIL_HOST_USER}>'

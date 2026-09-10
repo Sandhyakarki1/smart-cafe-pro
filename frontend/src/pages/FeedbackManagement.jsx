@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Star, Quote, MessageSquare } from 'lucide-react';
+import { BASE_URL } from '../config';
 
 const FeedbackManagement = () => {
   const [feedbacks, setFeedbacks] = useState([]);
@@ -27,7 +28,7 @@ const FeedbackManagement = () => {
   };
 
   const fetchFeedback = () => {
-    fetch("http://127.0.0.1:8000/api/feedback/")
+    fetch(`${BASE_URL}/api/feedback/`)
       .then(res => res.json())
       .then(data => {
         const sortedData = data.sort((a, b) => b.id - a.id);

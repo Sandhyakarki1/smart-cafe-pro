@@ -3,7 +3,7 @@ import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, Users, UtensilsCrossed, 
   ClipboardList, MessageSquare, QrCode, ReceiptText,
-  LogOut, ChevronDown, User, Settings, X 
+  LogOut, ChevronDown, User, Settings, X, Grid3x3
 } from 'lucide-react';
 
 const AdminLayout = () => {
@@ -29,13 +29,14 @@ const AdminLayout = () => {
     }
   }, []);
 
-  const menuItems = [
+    const menuItems = [
     { name: 'Dashboard', path: '/admin/dashboard', icon: <LayoutDashboard size={20} /> },
     { name: 'Staff', path: '/admin/staff', icon: <Users size={20} /> },
     { name: 'Menu', path: '/admin/menu', icon: <UtensilsCrossed size={20} /> },
     { name: 'Orders', path: '/admin/orders', icon: <ClipboardList size={20} /> },
     { name: 'Feedback', path: '/admin/feedback', icon: <MessageSquare size={20} /> },
     { name: 'QR Code', path: '/admin/qrcode', icon: <QrCode size={20} /> },
+    { name: 'Tables', path: '/admin/tables', icon: <Grid3x3 size={20} /> },
     { name: 'Billing', path: '/admin/billing', icon: <ReceiptText size={20} /> },
   ];
 

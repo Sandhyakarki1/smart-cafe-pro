@@ -2,14 +2,14 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import CryptoJS from "crypto-js";
 import { ShoppingBag, ArrowLeft, Trash2, CreditCard, ShieldCheck, Banknote, Loader2, MessageSquare } from "lucide-react";
-
-const BASE_URL = "https://prisoners-mood-hearing-moved.trycloudflare.com";
+import { BASE_URL } from "../config";
 
 export default function CustomerCart() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [cart, setCart] = useState(JSON.parse(localStorage.getItem("cart")) || []);
   const table = localStorage.getItem("table") || "1";
+  const tableId = localStorage.getItem("table_id");
 
   const syncCart = (newCart) => {
     setCart(newCart);
@@ -59,6 +59,7 @@ export default function CustomerCart() {
     setLoading(true);
 
     const orderData = {
+      table_id: tableId ? parseInt(tableId) : undefined,
       table_number: parseInt(table),
       payment_method: method,
       items: cart.map(item => ({ 

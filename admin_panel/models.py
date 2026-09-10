@@ -1,9 +1,47 @@
 from django.db import models
 from django.contrib.auth.models import User
-from django.db.models.signals import post_save
-from django.dispatch import receiver
 from django.utils import timezone
 from decimal import Decimal
+
+
+# ==================================================
+# CAFE (TENANT)
+# ==================================================
+class Cafe(models.Model):
+    name = models.CharField(max_length=150)
+    slug = models.SlugField(max_length=150, unique=True)  # used in URLs, e.g. "momoland"
+    address = models.CharField(max_length=255, blank=True, null=True)
+    pan_number = models.CharField(max_length=50, blank=True, null=True)
+    logo = models.ImageField(upload_to='cafe_logos/', null=True, blank=True)
+    owner = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='owned_cafes'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
+
+# ==================================================
+# TABLE
+# ==================================================
+class Table(models.Model):
+    cafe = models.ForeignKey(
+        'Cafe',
+        on_delete=models.CASCADE,
+        related_name='tables'
+    )
+    number = models.PositiveIntegerField()
+    qr_token = models.CharField(max_length=64, unique=True, blank=True, null=True)
+    is_occupied = models.BooleanField(default=False)
+
+    class Meta:
+        unique_together = ('cafe', 'number')
+
+    def __str__(self):
+        return f"{self.cafe.name} - Table {self.number}"
 
 
 # ==================================================
@@ -23,10 +61,16 @@ class Profile(models.Model):
         related_name='profile'
     )
 
+    cafe = models.ForeignKey(
+        'Cafe',
+        on_delete=models.CASCADE,
+        related_name='staff'
+    )
+
     role = models.CharField(
         max_length=50,
         choices=ROLE_CHOICES,
-        default='Waiter'
+        default='Admin'
     )
 
     otp = models.CharField(
@@ -39,12 +83,6 @@ class Profile(models.Model):
         return f"{self.user.username} - {self.role}"
 
 
-@receiver(post_save, sender=User)
-def manage_user_profile(sender, instance, created, **kwargs):
-    if created:
-        Profile.objects.get_or_create(user=instance)
-
-
 # ==================================================
 # MENU
 # ==================================================
@@ -54,6 +92,12 @@ class MenuItem(models.Model):
         ('Meals', 'Meals'),
         ('Snacks', 'Snacks'),
         ('Drinks', 'Drinks'),
+    )
+
+    cafe = models.ForeignKey(
+        'Cafe',
+        on_delete=models.CASCADE,
+        related_name='menu_items'
     )
 
     name = models.CharField(max_length=100)
@@ -73,6 +117,7 @@ class MenuItem(models.Model):
 class Order(models.Model):
 
     STATUS_CHOICES = (
+        ('Awaiting Confirmation', 'Awaiting Confirmation'),
         ('Pending', 'Pending'),
         ('Preparing', 'Preparing'),
         ('Ready', 'Ready'),
@@ -81,12 +126,26 @@ class Order(models.Model):
         ('Cancelled', 'Cancelled'),
     )
 
+    cafe = models.ForeignKey(
+        'Cafe',
+        on_delete=models.CASCADE,
+        related_name='orders'
+    )
+
     table_number = models.IntegerField(
         choices=[(i, f'Table {i}') for i in range(1, 6)]
     )
 
+    table = models.ForeignKey(
+        'Table',
+        on_delete=models.SET_NULL,
+        related_name='orders',
+        null=True,
+        blank=True
+    )
+
     status = models.CharField(
-        max_length=20,
+        max_length=25,
         choices=STATUS_CHOICES,
         default='Pending'
     )
@@ -132,6 +191,11 @@ class Order(models.Model):
 
     updated_at = models.DateTimeField(
         auto_now=True
+    )
+
+    served_at = models.DateTimeField(
+        null=True,
+        blank=True
     )
 
     # ==================================================

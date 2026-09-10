@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ChefHat, Play, CheckCircle, MessageSquare, Loader2 } from 'lucide-react';
-
-// Using a consistent BASE_URL logic
-const BASE_URL = "http://127.0.0.1:8000";
+import { BASE_URL } from '../config';
 
 export default function KitchenDashboard() {
   const [orders, setOrders] = useState([]);

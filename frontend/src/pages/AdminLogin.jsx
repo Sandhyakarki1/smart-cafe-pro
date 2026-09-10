@@ -1,6 +1,7 @@
 import { useState } from "react";
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom"; 
+import { BASE_URL } from "../config";
 
 function AdminLogin() {
   const [email, setEmail] = useState("");
@@ -10,6 +11,8 @@ function AdminLogin() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log("EMAIL:", JSON.stringify(email));
+    console.log("PASSWORD:", JSON.stringify(password));
     setError("");
 
     // --- GMAIL VALIDATION ---
@@ -19,7 +22,7 @@ function AdminLogin() {
     }
 
     try {
-      const res = await axios.post("http://127.0.0.1:8000/api/admin/login/", {
+     const res = await axios.post(`${BASE_URL}/api/admin/login/`, {
         email,
         password,
       });
