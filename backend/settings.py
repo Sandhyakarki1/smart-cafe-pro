@@ -88,11 +88,11 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DB_NAME', 'smart_cafe'),
-        'USER': os.environ.get('DB_USER', 'postgres'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', ''),
-        'HOST': os.environ.get('DB_HOST', 'localhost'),
-        'PORT': os.environ.get('DB_PORT', '5432'),
+        'NAME': os.environ.get('PGDATABASE', os.environ.get('DB_NAME', 'smart_cafe')),
+        'USER': os.environ.get('PGUSER', os.environ.get('DB_USER', 'postgres')),
+        'PASSWORD': os.environ.get('PGPASSWORD', os.environ.get('DB_PASSWORD', '')),
+        'HOST': os.environ.get('PGHOST', os.environ.get('DB_HOST', 'localhost')),
+        'PORT': os.environ.get('PGPORT', os.environ.get('DB_PORT', '5432')),
     }
 }
 
